@@ -82,12 +82,12 @@ public class RTPpacket {
         header[2] = (byte) (SequenceNumber >> 8);
         header[3] = (byte) (SequenceNumber & 0xFF);
         header[4] = (byte) (TimeStamp >> 24);
-        header[5] = (byte) (TimeStamp >> 16 & 0xFF);
-        header[6] = (byte) (TimeStamp >> 8 & 0xFF);
+        header[5] = (byte) (TimeStamp >> 16);
+        header[6] = (byte) (TimeStamp >> 8);
         header[7] = (byte) (TimeStamp & 0xFF);
         header[8] = (byte) (Ssrc >> 24);
-        header[9] = (byte) (Ssrc >> 16 & 0xFF);
-        header[10] = (byte) (Ssrc >> 8 & 0xFF);
+        header[9] = (byte) (Ssrc >> 16);
+        header[10] = (byte) (Ssrc >> 8);
         header[11] = (byte) (Ssrc & 0xFF);
     }
 

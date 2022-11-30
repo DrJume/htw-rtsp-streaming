@@ -209,7 +209,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
          * Level.CONFIG: default information (incl. RTSP requests)
          * Level.ALL: debugging information (headers, received packages and so on)
          */
-        logger.setLevel(Level.CONFIG);
+        logger.setLevel(Level.ALL);
 
         // create a Server object
         Server theServer = new Server();
@@ -503,7 +503,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
      */
     // DoneTASK Complete the OPTIONS response
     private String options() {
-        return "Public: DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE";
+        return "Public: DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE" + CRLF + CRLF;
     }
 
 
@@ -518,13 +518,13 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
 
         // Write the body first, so we can get the size later
         rtspBody.write("v=0" + CRLF);
-        rtspBody.write("o=- 2890844526 2890842807 IN IP4 localhost" + CRLF);
+        rtspBody.write("o=- " + RTSP_ID + " " + RTSP_ID + " IN IP4 localhost" + CRLF);
         rtspBody.write("s=HTW Video" + CRLF);
         rtspBody.write("c=IN IP4 localhost" + CRLF);
         rtspBody.write("t=0 0" + CRLF);
         rtspBody.write("m=video 8554 RTP/AVP 26" + CRLF);
         rtspBody.write("a=rtpmap:26 JPEG/90000" + CRLF);
-        rtspBody.write("a=framerate:40" + CRLF);
+        rtspBody.write("a=framerate:" + meta.getFramerate() + CRLF);
 
         rtspHeader.write("Content-Base: " + "rtsp://localhost/htw.mjpeg/" + CRLF);
         rtspHeader.write("Content-Type: " + "application/sdp" + CRLF);

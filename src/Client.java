@@ -175,7 +175,7 @@ public class Client {
          * Level.CONFIG: default information (incl. RTSP requests)
          * Level.ALL: debugging information (headers, received packages and so on)
          */
-        logger.setLevel(Level.CONFIG);
+        logger.setLevel(Level.ALL);
 
         // Create a Client object
         Client theClient = new Client();
@@ -554,7 +554,7 @@ public class Client {
                         break;
 
                     case "public:":
-                        logger.log(Level.INFO, "Options-Response: " + headerField.nextToken());
+                        logger.log(Level.INFO, "Options-Response: " + headerField.nextToken(CRLF));
                         break;
 
                     case "content-type:":
@@ -592,13 +592,13 @@ public class Client {
         logger.log(Level.INFO, new String(cbuf));
 
         String[] sbuf = new String(cbuf).split(CRLF);
-        for (int i = 0; i < sbuf.length; i++) {
-            if (sbuf[i].contains("framerate")) {
-                String sfr = sbuf[i].split(":")[1];
+        for (String s : sbuf) {
+            if (s.contains("framerate")) {
+                String sfr = s.split(":")[1];
                 framerate = Integer.parseInt(sfr);
                 logger.log(Level.INFO, "framerate: " + framerate);
-            } else if (sbuf[i].contains("range:npt")) {
-                String[] sdur = sbuf[i].split("-");
+            } else if (s.contains("range:npt")) {
+                String[] sdur = s.split("-");
                 if (sdur.length > 1) {
                     duration = Double.parseDouble(sdur[1]);
                     logger.log(Level.INFO, "duration [s]: " + duration);
@@ -693,17 +693,11 @@ public class Client {
             RtpHandler.EncryptionMode mode = RtpHandler.EncryptionMode.NONE;
 
             switch (label) {
-                case "SRTP":
-                    mode = RtpHandler.EncryptionMode.SRTP;
-                    break;
-                case "JPEG":
-                    mode = RtpHandler.EncryptionMode.JPEG;
-                    break;
-                case "JPEG (Angriff)":
-                    mode = RtpHandler.EncryptionMode.JPEG_ATTACK;
-                    break;
-                default:
-                    break;
+                case "SRTP" -> mode = RtpHandler.EncryptionMode.SRTP;
+                case "JPEG" -> mode = RtpHandler.EncryptionMode.JPEG;
+                case "JPEG (Angriff)" -> mode = RtpHandler.EncryptionMode.JPEG_ATTACK;
+                default -> {
+                }
             }
 
             boolean encryptionSet = rtpHandler.setEncryption(mode);

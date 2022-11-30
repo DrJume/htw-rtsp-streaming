@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 
 /**
  * Handler for RTP packets.
- *
+ * <p>
  * Processes all RTP packets and provides JPEG images for displaying
  *
  * @author Emanuel Günther
@@ -23,12 +23,12 @@ public class RtpHandler {
 
     public static final int RTP_PAYLOAD_FEC = 127; // assumed as in RFC 5109, 10.1
     public static final int RTP_PAYLOAD_JPEG = 26;
-    private static byte[] defaultKey = new byte[]{
-        (byte)0xE1, (byte)0xF9, (byte)0x7A, (byte)0x0D, (byte)0x3E, (byte)0x01, (byte)0x8B, (byte)0xE0,
-        (byte)0xD6, (byte)0x4F, (byte)0xA3, (byte)0x2C, (byte)0x06, (byte)0xDE, (byte)0x41, (byte)0x39};
-    private static byte[] defaultSalt = new byte[]{
-        (byte)0x0E, (byte)0xC6, (byte)0x75, (byte)0xAD, (byte)0x49, (byte)0x8A, (byte)0xFE,
-        (byte)0xEB, (byte)0xB6, (byte)0x96, (byte)0x0B, (byte)0x3A, (byte)0xAB, (byte)0xE6};
+    private static final byte[] defaultKey = new byte[]{
+            (byte) 0xE1, (byte) 0xF9, (byte) 0x7A, (byte) 0x0D, (byte) 0x3E, (byte) 0x01, (byte) 0x8B, (byte) 0xE0,
+            (byte) 0xD6, (byte) 0x4F, (byte) 0xA3, (byte) 0x2C, (byte) 0x06, (byte) 0xDE, (byte) 0x41, (byte) 0x39};
+    private static final byte[] defaultSalt = new byte[]{
+            (byte) 0x0E, (byte) 0xC6, (byte) 0x75, (byte) 0xAD, (byte) 0x49, (byte) 0x8A, (byte) 0xFE,
+            (byte) 0xEB, (byte) 0xB6, (byte) 0x96, (byte) 0x0B, (byte) 0x3A, (byte) 0xAB, (byte) 0xE6};
 
     private EncryptionMode encryptionMode;
     private FecHandler fecHandler = null;
@@ -85,16 +85,16 @@ public class RtpHandler {
         byte[] encryptedPacket = null;
 
         switch (encryptionMode) {
-        case SRTP:
-            encryptedPacket = srtpHandler.transformToSrtp(new RTPpacket(fecPacket, fecPacket.length));
-            if (encryptedPacket != null) {
-                fecPacket = encryptedPacket;
+            case SRTP -> {
+                encryptedPacket = srtpHandler.transformToSrtp(new RTPpacket(fecPacket, fecPacket.length));
+                if (encryptedPacket != null) {
+                    fecPacket = encryptedPacket;
+                }
             }
-            break;
-        case JPEG:
-        case JPEG_ATTACK:
-        default:
-            break;
+            case JPEG, JPEG_ATTACK -> {
+            }
+            default -> {
+            }
         }
 
         return fecPacket;
@@ -127,7 +127,7 @@ public class RtpHandler {
 
     /**
      * Transform a JPEG image to an RTP packet.
-     *
+     * <p>
      * Takes care of all steps inbetween.
      *
      * @param jpegImage JPEG image as byte array
@@ -136,17 +136,11 @@ public class RtpHandler {
     public byte[] jpegToRtpPacket(final byte[] jpegImage, int framerate) {
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-        byte[] image = null;
-        switch (encryptionMode) {
-        case JPEG:
-            image = jpegEncryptionHandler.encrypt(jpegImage);
-            break;
-        case JPEG_ATTACK:
-        case SRTP:
-        default:
-            image = jpegImage;
-            break;
-        }
+        byte[] image = switch (encryptionMode) {
+            case JPEG -> jpegEncryptionHandler.encrypt(jpegImage);
+            case JPEG_ATTACK, SRTP -> jpegImage;
+            default -> jpegImage;
+        };
 
         byte[] payload;
         JpegFrame frame = JpegFrame.getFromJpegBytes(image);
@@ -167,13 +161,12 @@ public class RtpHandler {
 
         byte[] packetData = null;
         switch (encryptionMode) {
-        case SRTP:
-            packetData = srtpHandler.transformToSrtp(packet);
-            break;
-        case JPEG:
-        case JPEG_ATTACK:
-        default:
-            break;
+            case SRTP -> packetData = srtpHandler.transformToSrtp(packet);
+            case JPEG, JPEG_ATTACK -> {
+            }
+            default -> {
+            }
+
         }
 
         if (packetData == null) {
@@ -184,7 +177,7 @@ public class RtpHandler {
 
     /**
      * Get next image for playback.
-     *
+     * <p>
      * This method is the main interface for continuously getting images
      * for the purpose of displaying them.
      *
@@ -207,21 +200,22 @@ public class RtpHandler {
 
         byte[] decryptedImage = null;
         switch (encryptionMode) {
-        case JPEG:
-            decryptedImage = jpegEncryptionHandler.decrypt(image);
-            if (decryptedImage != null) {
-                image = decryptedImage;
+            case JPEG -> {
+                decryptedImage = jpegEncryptionHandler.decrypt(image);
+                if (decryptedImage != null) {
+                    image = decryptedImage;
+                }
             }
-            break;
-        case JPEG_ATTACK:
-            decryptedImage = jpegEncryptionHandler.replaceAttackDecryption(image);
-            if (decryptedImage != null) {
-                image = decryptedImage;
+            case JPEG_ATTACK -> {
+                decryptedImage = jpegEncryptionHandler.replaceAttackDecryption(image);
+                if (decryptedImage != null) {
+                    image = decryptedImage;
+                }
             }
-            break;
-        case SRTP:
-        default:
-            break;
+            case SRTP -> {
+            }
+            default -> {
+            }
         }
 
         return image;
@@ -239,16 +233,16 @@ public class RtpHandler {
 
         RTPpacket decryptedPacket = null;
         switch (encryptionMode) {
-        case SRTP:
-            decryptedPacket = srtpHandler.retrieveFromSrtp(packet.getpacket());
-            if (decryptedPacket != null) {
-                packet = decryptedPacket;
+            case SRTP -> {
+                decryptedPacket = srtpHandler.retrieveFromSrtp(packet.getpacket());
+                if (decryptedPacket != null) {
+                    packet = decryptedPacket;
+                }
             }
-            break;
-        case JPEG:
-        case JPEG_ATTACK:
-        default:
-            break;
+            case JPEG, JPEG_ATTACK -> {
+            }
+            default -> {
+            }
         }
 
         // set the correct index for beginning the playback
@@ -280,17 +274,17 @@ public class RtpHandler {
 
         logger.log(Level.FINER,
                 "---------------- Receiver -----------------------"
-                + "\r\n"
-                + "Got RTP packet with SeqNum # "
-                + packet.getsequencenumber()
-                + " TimeStamp: "
-                + (0xFFFFFFFFL & packet.gettimestamp()) // cast to long
-                + " ms, of type "
-                + pt
-                + " Size: " + packet.getlength());
+                        + "\r\n"
+                        + "Got RTP packet with SeqNum # "
+                        + packet.getsequencenumber()
+                        + " TimeStamp: "
+                        + (0xFFFFFFFFL & packet.gettimestamp()) // cast to long
+                        + " ms, of type "
+                        + pt
+                        + " Size: " + packet.getlength());
 
         // TASK remove comment for debugging
-        // packet.printheader(); // print rtp header bitstream for debugging
+        packet.printheader(); // print rtp header bitstream for debugging
     }
 
     /**
@@ -307,35 +301,32 @@ public class RtpHandler {
 
         encryptionMode = mode;
         switch (encryptionMode) {
-        case SRTP:
-            /* Use pre-shared key and salt to avoid key management and
-             * session initialization with a protocol.
-             */
-            try {
-                srtpHandler = new SrtpHandler(
-                        SrtpHandler.EncryptionAlgorithm.AES_CTR,
-                        SrtpHandler.MacAlgorithm.NONE,
-                        defaultKey, defaultSalt, 0);
-            } catch (InvalidKeyException ikex) {
-                System.out.println(ikex);
-            } catch (InvalidAlgorithmParameterException iapex) {
-                System.out.println(iapex);
+            case SRTP -> {
+                /* Use pre-shared key and salt to avoid key management and
+                 * session initialization with a protocol.
+                 */
+                try {
+                    srtpHandler = new SrtpHandler(
+                            SrtpHandler.EncryptionAlgorithm.AES_CTR,
+                            SrtpHandler.MacAlgorithm.NONE,
+                            defaultKey, defaultSalt, 0);
+                } catch (InvalidKeyException | InvalidAlgorithmParameterException ikex) {
+                    System.out.println(ikex.toString());
+                }
+                if (srtpHandler == null) {
+                    return false;
+                }
             }
-            if (srtpHandler == null) {
-                return false;
+            case JPEG, JPEG_ATTACK ->
+                /* Use pre-shared key and salt to avoid key management and
+                 * session initialization with a protocol.
+                 */
+                    jpegEncryptionHandler = new JpegEncryptionHandler(
+                            defaultKey, defaultSalt);
+            case NONE -> {
             }
-            break;
-        case JPEG:
-        case JPEG_ATTACK:
-            /* Use pre-shared key and salt to avoid key management and
-             * session initialization with a protocol.
-             */
-            jpegEncryptionHandler = new JpegEncryptionHandler(
-                    defaultKey, defaultSalt);
-            break;
-        case NONE:
-        default:
-            break;
+            default -> {
+            }
         }
 
         return true;
@@ -361,7 +352,7 @@ public class RtpHandler {
 
     /**
      * Get the RTP packet with the given sequence number.
-     *
+     * <p>
      * This is the main method for getting RTP packets. It currently
      * includes error correction via FEC, but can be extended in future.
      *
