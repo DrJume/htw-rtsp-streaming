@@ -177,14 +177,13 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
         JRadioButton rb = (JRadioButton) ev.getItem();
         if (rb.isSelected()) {
             String label = rb.getText();
-            RtpHandler.EncryptionMode mode = RtpHandler.EncryptionMode.NONE;
+            RtpHandler.EncryptionMode mode;
 
-            switch (label) {
-                case "SRTP" -> mode = RtpHandler.EncryptionMode.SRTP;
-                case "JPEG" -> mode = RtpHandler.EncryptionMode.JPEG;
-                default -> {
-                }
-            }
+            mode = switch (label) {
+                case "SRTP" -> RtpHandler.EncryptionMode.SRTP;
+                case "JPEG" -> RtpHandler.EncryptionMode.JPEG;
+                default -> RtpHandler.EncryptionMode.NONE;
+            };
 
             boolean encryptionSet = rtpHandler.setEncryption(mode);
             if (!encryptionSet) {
@@ -378,6 +377,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
         // DoneTASK correct the if-instruction to work properly
         if (random.nextDouble() > lossRate) {
             logger.log(Level.FINE, "Send frame: " + imageNb + label);
+            RTPsocket.send(senddp);
         } else {
             System.err.println("Dropped frame: " + imageNb + label);
             if (!fec) dropCounter++;
@@ -404,14 +404,15 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
             String request_type_string = tokens.nextToken();
 
             // convert to request_type structure:
-            switch ((request_type_string)) {
-                case "SETUP" -> request_type = SETUP;
-                case "PLAY" -> request_type = PLAY;
-                case "PAUSE" -> request_type = PAUSE;
-                case "TEARDOWN" -> request_type = TEARDOWN;
-                case "OPTIONS" -> request_type = OPTIONS;
-                case "DESCRIBE" -> request_type = DESCRIBE;
-            }
+            request_type = switch ((request_type_string)) {
+                case "SETUP" -> SETUP;
+                case "PLAY" -> PLAY;
+                case "PAUSE" -> PAUSE;
+                case "TEARDOWN" -> TEARDOWN;
+                case "OPTIONS" -> OPTIONS;
+                case "DESCRIBE" -> DESCRIBE;
+                default -> -1;
+            };
 
             if (request_type == SETUP
                     || request_type == DESCRIBE) {
@@ -435,7 +436,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
                 } else if (line.contains("Transport")) {
                     sdpTransportLine = line;
                     RTP_dest_port = Integer.parseInt(line.split("=")[1].split("-")[0]);
-                    FEC_dest_port = RTP_dest_port + 0;
+                    FEC_dest_port = RTP_dest_port + 2;
                     logger.log(Level.FINE, "Client-Port: " + RTP_dest_port);
                 }
                 // else is any other field, not checking for now

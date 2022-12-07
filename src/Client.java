@@ -690,15 +690,14 @@ public class Client {
         JRadioButton rb = (JRadioButton) ev.getItem();
         if (rb.isSelected()) {
             String label = rb.getText();
-            RtpHandler.EncryptionMode mode = RtpHandler.EncryptionMode.NONE;
+            RtpHandler.EncryptionMode mode;
 
-            switch (label) {
-                case "SRTP" -> mode = RtpHandler.EncryptionMode.SRTP;
-                case "JPEG" -> mode = RtpHandler.EncryptionMode.JPEG;
-                case "JPEG (Angriff)" -> mode = RtpHandler.EncryptionMode.JPEG_ATTACK;
-                default -> {
-                }
-            }
+            mode = switch (label) {
+                case "SRTP" -> RtpHandler.EncryptionMode.SRTP;
+                case "JPEG" -> RtpHandler.EncryptionMode.JPEG;
+                case "JPEG (Angriff)" -> RtpHandler.EncryptionMode.JPEG_ATTACK;
+                default -> RtpHandler.EncryptionMode.NONE;
+            };
 
             boolean encryptionSet = rtpHandler.setEncryption(mode);
             if (!encryptionSet) {

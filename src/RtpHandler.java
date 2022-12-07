@@ -159,15 +159,12 @@ public class RtpHandler {
             fecHandler.setRtp(packet);
         }
 
-        byte[] packetData = null;
-        switch (encryptionMode) {
-            case SRTP -> packetData = srtpHandler.transformToSrtp(packet);
-            case JPEG, JPEG_ATTACK -> {
-            }
-            default -> {
-            }
-
-        }
+        byte[] packetData =
+                switch (encryptionMode) {
+                    case SRTP -> srtpHandler.transformToSrtp(packet);
+                    case JPEG, JPEG_ATTACK -> null;
+                    default -> null;
+                };
 
         if (packetData == null) {
             packetData = packet.getpacket();
