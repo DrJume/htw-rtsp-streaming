@@ -1,0 +1,17 @@
+
+[http]
+proxy = http://www-cache.htw-dresden.de:3128
+[https]
+proxy = https://www-cache.htw-dresden.de:3128
+[user]
+email = ihre.email@htw-dresden.de
+name = Ihr Name
+[url "https://ihr-git-nutzername@github.com"]
+insteadOf = https://github.com
+[credential]
+helper = store
+[pager]
+branch = cat
+[color]
+ui = true
+

@@ -44,14 +44,9 @@ Um nicht die komplette FEC-Funktionalität selbst entwickeln zu müssen, werden 
    * Client: Jitterpuffer für empfangene Medien- und FEC-Pakete, Bereitstellung des aktuellen Bildinhaltes in Form einer Liste von RTP-Paketen mit gleichem TimeStamp.
 
 
-Die Fehlerkorrektur im FecHandler ist noch zu implementieren. Dazu ist die vorhandene Architektur zu analysieren.
-Die vorhandene Struktur ist in  [Architektur](#architekturvorschlag) beschrieben.
-Um die Fehlerkorrektur im Client effizient zu implementieren, ist es sinnvoll, die `setRtp()`-Methode zu analysieren.
+Die Fehlerkorrektur im FecHandler ist noch zu implementieren. Dazu ist die vorhandene Architektur zu analysieren und die TASK-Abschnitte zu bearbeiten.
 
-Alternativ können Sie die Klasse FecHandler auch komplett neu entwerfen und nur die fertige Klasse FECpacket übernehmen.
-
-
-
+Eine Übersicht über die relevanten Datenstrukturen und ein Beispiel ist hier zu finden [FEC-Diagramme](https://www2.htw-dresden.de/~jvogt/it2/fec-diagramme.html)
 
 
 #### Architektur der Paketverarbeitung
