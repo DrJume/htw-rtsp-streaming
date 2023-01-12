@@ -18,37 +18,7 @@ import java.util.logging.Logger;
 
 public class Server extends JFrame implements ActionListener, ChangeListener {
 
-    // RTP variables:
-    // ----------------
-    DatagramSocket RTPsocket; // socket to be used to send and receive UDP packets
-    DatagramPacket senddp; // UDP packet containing the video frames
-    InetAddress ClientIPAddr; // Client IP address
-    int RTP_dest_port = 0; // destination port for RTP packets  (given by the RTSP Client)
-    int FEC_dest_port = 0; // destination port for RTP-FEC packets  (RTP or RTP+2)
     final static int startGroupSize = 2;
-    RtpHandler rtpHandler = null;
-    // Channel errors
-    private double lossRate = 0.0;
-    Random random = new Random(123456); // fixed seed for debugging
-    int dropCounter; // Nr. of dropped media packets
-
-    // GUI:
-    // ----------------
-    JLabel label;
-    static JLabel stateLabel;
-    private ButtonGroup encryptionButtons = null;
-
-    // Video variables:
-    // ----------------
-    static int imageNb = 0; // image nb of the image currently transmitted
-    VideoReader video; // VideoStream object used to access video frames
-    static int MJPEG_TYPE = 26; // RTP payload type for MJPEG video
-    static int DEFAULT_FRAME_PERIOD = 40; // Frame period of the video to stream, in ms
-    public VideoMetadata videoMeta = null;
-
-    Timer timer; // timer used to send the images at the video frame rate
-    // byte[] buf; // buffer used to store the images to send to the client
-
     // RTSP variables
     // ----------------
     // rtsp states
@@ -62,19 +32,43 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
     static final int TEARDOWN = 6;
     static final int OPTIONS = 7;
     static final int DESCRIBE = 8;
-
+    static final String CRLF = "\r\n";
+    static JLabel stateLabel;
+    // Video variables:
+    // ----------------
+    static int imageNb = 0; // image nb of the image currently transmitted
+    static int MJPEG_TYPE = 26; // RTP payload type for MJPEG video
+    static int DEFAULT_FRAME_PERIOD = 40; // Frame period of the video to stream, in ms
     static int state; // RTSP Server state == INIT or READY or PLAY
-    Socket RTSPsocket; // socket used to send/receive RTSP messages
     // input and output stream filters
     static BufferedReader RTSPBufferedReader;
     static BufferedWriter RTSPBufferedWriter;
     static String VideoFileName = ""; // video file requested from the client
+    // byte[] buf; // buffer used to store the images to send to the client
     static String VideoDir = "videos/";
     static int RTSP_ID = 123456; // ID of the RTSP session
+    public VideoMetadata videoMeta = null;
+    // RTP variables:
+    // ----------------
+    DatagramSocket RTPsocket; // socket to be used to send and receive UDP packets
+    DatagramPacket senddp; // UDP packet containing the video frames
+    InetAddress ClientIPAddr; // Client IP address
+    int RTP_dest_port = 0; // destination port for RTP packets  (given by the RTSP Client)
+    int FEC_dest_port = 0; // destination port for RTP-FEC packets  (RTP or RTP+2)
+    RtpHandler rtpHandler = null;
+    Random random = new Random(123456); // fixed seed for debugging
+    int dropCounter; // Nr. of dropped media packets
+    // GUI:
+    // ----------------
+    JLabel label;
+    VideoReader video; // VideoStream object used to access video frames
+    Timer timer; // timer used to send the images at the video frame rate
+    Socket RTSPsocket; // socket used to send/receive RTSP messages
     int RTSPSeqNb = 0; // Sequence number of RTSP messages within the session
     String sdpTransportLine = "";
-
-    static final String CRLF = "\r\n";
+    // Channel errors
+    private double lossRate = 0.0;
+    private ButtonGroup encryptionButtons = null;
 
 
     public Server() {
@@ -141,60 +135,6 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
             RTPsocket = new DatagramSocket();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Exception caught: " + e);
-        }
-    }
-
-    /**
-     * Handler for Channel error Slider
-     *
-     * @param e Change Event
-     */
-    public void stateChanged(ChangeEvent e) {
-        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-        JSlider source = (JSlider) e.getSource();
-        if (!source.getValueIsAdjusting()) {
-            if (source.getName().equals("k")) {
-                int k = source.getValue();
-                rtpHandler.setFecGroupSize(k);
-                logger.log(Level.INFO, "New Group size: " + k);
-            } else {
-                lossRate = source.getValue();
-                lossRate = lossRate / 100;
-                logger.log(Level.INFO, "New packet error rate: " + lossRate);
-            }
-        }
-    }
-
-    /**
-     * Handler for encryption RadioButtons.
-     * <p>
-     * The ItemEvent is just fired if a Button is selected
-     * which previous was not.
-     *
-     * @param ev ItemEvent
-     */
-    public void radioButtonSelected(ItemEvent ev) {
-        JRadioButton rb = (JRadioButton) ev.getItem();
-        if (rb.isSelected()) {
-            String label = rb.getText();
-            RtpHandler.EncryptionMode mode;
-
-            mode = switch (label) {
-                case "SRTP" -> RtpHandler.EncryptionMode.SRTP;
-                case "JPEG" -> RtpHandler.EncryptionMode.JPEG;
-                default -> RtpHandler.EncryptionMode.NONE;
-            };
-
-            boolean encryptionSet = rtpHandler.setEncryption(mode);
-            if (!encryptionSet) {
-                Enumeration<AbstractButton> buttons = encryptionButtons.getElements();
-                while (buttons.hasMoreElements()) {
-                    AbstractButton ab = buttons.nextElement();
-                    if (ab.getText().equals("keine")) {
-                        ab.setSelected(true);
-                    }
-                }
-            }
         }
     }
 
@@ -326,6 +266,94 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
     }
 
     /**
+     * Get the metadata from a video file.
+     * <p>
+     * If no metadata is available, all fields are zero-initialized with
+     * exception of the framerate. Because the framerate is strongly required,
+     * it is set to a default value.
+     *
+     * @param filename Name of the video file
+     * @return metadata structure containing the extracted information
+     */
+    private static VideoMetadata getVideoMetadata(String filename) {
+        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+        VideoMetadata meta = null;
+
+        String[] splitFilename = filename.split("\\.");
+        switch (splitFilename[splitFilename.length - 1]) {
+            case "avi":
+                meta = AviMetadataParser.parse(filename);
+                break;
+            case "mov":
+                meta = QuickTimeMetadataParser.parse(filename);
+                break;
+            default:
+                logger.log(Level.WARNING, "File extension not recognized: " + filename);
+            case "mjpg":
+            case "mjpeg":
+                meta = new VideoMetadata(1000 / DEFAULT_FRAME_PERIOD);
+                break;
+        }
+
+        assert meta != null : "VideoMetadata of file " + filename + " was not initialized correctly";
+        return meta;
+    }
+
+    /**
+     * Handler for Channel error Slider
+     *
+     * @param e Change Event
+     */
+    public void stateChanged(ChangeEvent e) {
+        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+        JSlider source = (JSlider) e.getSource();
+        if (!source.getValueIsAdjusting()) {
+            if (source.getName().equals("k")) {
+                int k = source.getValue();
+                rtpHandler.setFecGroupSize(k);
+                logger.log(Level.INFO, "New Group size: " + k);
+            } else {
+                lossRate = source.getValue();
+                lossRate = lossRate / 100;
+                logger.log(Level.INFO, "New packet error rate: " + lossRate);
+            }
+        }
+    }
+
+    /**
+     * Handler for encryption RadioButtons.
+     * <p>
+     * The ItemEvent is just fired if a Button is selected
+     * which previous was not.
+     *
+     * @param ev ItemEvent
+     */
+    public void radioButtonSelected(ItemEvent ev) {
+        JRadioButton rb = (JRadioButton) ev.getItem();
+        if (rb.isSelected()) {
+            String label = rb.getText();
+            RtpHandler.EncryptionMode mode;
+
+            mode = switch (label) {
+                case "SRTP" -> RtpHandler.EncryptionMode.SRTP;
+                case "JPEG" -> RtpHandler.EncryptionMode.JPEG;
+                default -> RtpHandler.EncryptionMode.NONE;
+            };
+
+            boolean encryptionSet = rtpHandler.setEncryption(mode);
+            if (!encryptionSet) {
+                Enumeration<AbstractButton> buttons = encryptionButtons.getElements();
+                while (buttons.hasMoreElements()) {
+                    AbstractButton ab = buttons.nextElement();
+                    if (ab.getText().equals("keine")) {
+                        ab.setSelected(true);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Hander for timer
      *
      * @param e ActionEvent
@@ -397,7 +425,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
             logger.log(Level.INFO, "*** wait for RTSP-Request ***");
             // parse request line and extract the request_type:
             String RequestLine = RTSPBufferedReader.readLine();
-            // System.out.println("RTSP Server - Received from Client:");
+            System.out.println("RTSP Server - Received from Client:");
             logger.log(Level.CONFIG, RequestLine);
 
             StringTokenizer tokens = new StringTokenizer(RequestLine);
@@ -507,7 +535,6 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
         return "Public: DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE" + CRLF + CRLF;
     }
 
-
     /**
      * Creates a DESCRIBE response string in SDP format for current media
      */
@@ -576,39 +603,5 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(e_jpeg, gbc);
-    }
-
-    /**
-     * Get the metadata from a video file.
-     * <p>
-     * If no metadata is available, all fields are zero-initialized with
-     * exception of the framerate. Because the framerate is strongly required,
-     * it is set to a default value.
-     *
-     * @param filename Name of the video file
-     * @return metadata structure containing the extracted information
-     */
-    private static VideoMetadata getVideoMetadata(String filename) {
-        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-        VideoMetadata meta = null;
-
-        String[] splitFilename = filename.split("\\.");
-        switch (splitFilename[splitFilename.length - 1]) {
-            case "avi":
-                meta = AviMetadataParser.parse(filename);
-                break;
-            case "mov":
-                meta = QuickTimeMetadataParser.parse(filename);
-                break;
-            default:
-                logger.log(Level.WARNING, "File extension not recognized: " + filename);
-            case "mjpg":
-            case "mjpeg":
-                meta = new VideoMetadata(1000 / DEFAULT_FRAME_PERIOD);
-                break;
-        }
-
-        assert meta != null : "VideoMetadata of file " + filename + " was not initialized correctly";
-        return meta;
     }
 }

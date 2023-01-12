@@ -14,13 +14,6 @@ import java.util.logging.Logger;
  * @author Emanuel Günther
  */
 public class RtpHandler {
-    public enum EncryptionMode {
-        NONE,
-        SRTP,
-        JPEG,
-        JPEG_ATTACK
-    }
-
     public static final int RTP_PAYLOAD_FEC = 127; // assumed as in RFC 5109, 10.1
     public static final int RTP_PAYLOAD_JPEG = 26;
     private static final byte[] defaultKey = new byte[]{
@@ -29,16 +22,13 @@ public class RtpHandler {
     private static final byte[] defaultSalt = new byte[]{
             (byte) 0x0E, (byte) 0xC6, (byte) 0x75, (byte) 0xAD, (byte) 0x49, (byte) 0x8A, (byte) 0xFE,
             (byte) 0xEB, (byte) 0xB6, (byte) 0x96, (byte) 0x0B, (byte) 0x3A, (byte) 0xAB, (byte) 0xE6};
-
     private EncryptionMode encryptionMode;
     private FecHandler fecHandler = null;
     private JpegEncryptionHandler jpegEncryptionHandler = null;
     private SrtpHandler srtpHandler = null;
-
     // server side
     private int currentSeqNb = 0; // sequence number of current frame
     private boolean fecEncodingEnabled = false; // server side
-
     // client side
     private boolean fecDecodingEnabled = false; // client side
     private HashMap<Integer, RTPpacket> mediaPackets = null;
@@ -280,7 +270,7 @@ public class RtpHandler {
                         + pt
                         + " Size: " + packet.getlength());
 
-        // TASK remove comment for debugging
+        // DoneTASK remove comment for debugging
         packet.printheader(); // print rtp header bitstream for debugging
     }
 
@@ -351,7 +341,7 @@ public class RtpHandler {
      * Get the RTP packet with the given sequence number.
      * <p>
      * This is the main method for getting RTP packets. It currently
-     * includes error correction via FEC, but can be extended in future.
+     * includes error correction via FEC, but can be extended in the future.
      *
      * @param number Sequence number of the RTP packet
      * @return RTP packet, null if not available and not correctable
@@ -402,17 +392,24 @@ public class RtpHandler {
             return packetList;
         }
 
-        // TODO lost RTPs are not in the list but could perhaps be corrected -> check for snr
+        // egalTODO lost RTPs are not in the list but could perhaps be corrected -> check for snr
         for (int i = 1; i < timestamps.size(); i++) {
             packetList.add(obtainMediaPacket(timestamps.get(i)));
         }
 
         playbackIndex += timestamps.size() - 1;
-        // TODO if list is fragmented return null or implement JPEG error concealment
+        // egalTODO if list is fragmented return null or implement JPEG error concealment
 
         logger.log(Level.FINER, "-> Get list of " + packetList.size()
                 + " RTPs with TS: " + (0xFFFFFFFFL & timestamp));
         return packetList;
+    }
+
+    public enum EncryptionMode {
+        NONE,
+        SRTP,
+        JPEG,
+        JPEG_ATTACK
     }
 }
 

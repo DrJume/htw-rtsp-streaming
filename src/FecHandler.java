@@ -15,24 +15,20 @@ import java.util.logging.Logger;
 */
 
 public class FecHandler {
+    // *** RTP-Header ************************
+    static final int MJPEG = 26;
+    // *** FEC Parameters -> Sender ************
+    static final int maxGroupSize = 48;
     RTPpacket rtp;
     FECpacket fec;
-
     // Receiver
     HashMap<Integer, FECpacket> fecStack = new HashMap<>(); // list of fec packets
     HashMap<Integer, Integer> fecNr = new HashMap<>(); // Snr of corresponding fec packet
     HashMap<Integer, List<Integer>> fecList = new HashMap<>(); // list of involved media packets
-
     int playCounter = 0; // SNr of RTP-packet to play next, initialized with first received packet
-
-    // *** RTP-Header ************************
-    static final int MJPEG = 26;
     int FEC_PT = 127; // Type for FEC
     int fecSeqNr; // Sender: increased by one, starting from 0
     int lastReceivedSeqNr; // Receiver: last received media packet
-
-    // *** FEC Parameters -> Sender ************
-    static final int maxGroupSize = 48;
     int fecGroupSize; // FEC group size
     int fecGroupCounter;
 
@@ -100,7 +96,7 @@ public class FecHandler {
      * @return Bitstream of FEC-Packet including RTP-Header
      */
     public byte[] getPacket() {
-        fec.printHeaders();
+        // fec.printHeaders();
         // Adjust and reset all involved variables
         fecSeqNr++;
         fecGroupCounter = 0;
@@ -113,7 +109,7 @@ public class FecHandler {
      * Reset of fec group and variables
      */
     private void clearSendGroup() {
-        // TODO
+        // egalTODO
     }
 
     /**
@@ -136,7 +132,7 @@ public class FecHandler {
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
         // build fec from rtp
         fec = new FECpacket(rtp.getpacket(), rtp.getpacket().length);
-        // TASK remove comment for debugging
+        // DoneTASK remove comment for debugging
         // fec.printHeaders();
 
         // stores fec
@@ -163,21 +159,33 @@ public class FecHandler {
      */
     public boolean checkCorrection(int nr, HashMap<Integer, RTPpacket> mediaPackets) {
         FECpacket fecPacketForSn = fecStack.get(fecNr.get(nr));
+        if (fecPacketForSn == null) return false;
 
-        ArrayList<Integer> groupRTPPacketsSeqNrs = new ArrayList<>(fecList.get(nr));
-        groupRTPPacketsSeqNrs.remove(nr);
+        if (fecList.get(nr) == null) return false;
+        List<Integer> rtpSeqNrGroup = fecList.get(nr);
+        rtpSeqNrGroup.remove(nr);
 
-        return mediaPackets.keySet().containsAll(groupRTPPacketsSeqNrs);
+        return mediaPackets.keySet().containsAll(rtpSeqNrGroup);
     }
 
     /**
-     * Build a RTP packet from FEC and group
+     * Build an RTP packet from FEC and group
      *
      * @param nr Sequence Nr.
      * @return RTP packet
      */
     public RTPpacket correctRtp(int nr, HashMap<Integer, RTPpacket> mediaPackets) {
-        //TASK complete this method!
+        //DoneTASK complete this method!
+        Integer fecPacketNumber = fecNr.get(nr);
+        FECpacket fecPacket = fecStack.get(fecPacketNumber);
+
+        List<Integer> rtpSeqNrGroup = fecList.get(nr);
+        rtpSeqNrGroup.removeIf((seqNr) -> seqNr == nr);
+
+        for (int rtpSeqNr : rtpSeqNrGroup) {
+            fec.addRtp(mediaPackets.get(rtpSeqNr));
+        }
+
         return fec.getLostRtp(nr);
     }
 
