@@ -155,13 +155,13 @@ public class FECpacket extends RTPpacket {
         fecHeader[0] = (byte) (E << 7 | L << 6);
         fecHeader[1] = (byte) (M << 7 | ptRecovery);
         fecHeader[2] = (byte) (snBase >> 8);
-        fecHeader[3] = (byte) (snBase & 0xFF);
+        fecHeader[3] = (byte) (0xFF & snBase);
         fecHeader[4] = (byte) (tsRecovery >> 24);
         fecHeader[5] = (byte) (tsRecovery >> 16);
         fecHeader[6] = (byte) (tsRecovery >> 8);
         fecHeader[7] = (byte) (tsRecovery);
         fecHeader[8] = (byte) (lengthRecovery >> 8);
-        fecHeader[9] = (byte) (lengthRecovery & 0xFF);
+        fecHeader[9] = (byte) (0xFF & lengthRecovery);
     }
 
 

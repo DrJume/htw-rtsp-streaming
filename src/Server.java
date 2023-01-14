@@ -464,7 +464,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
                 } else if (line.contains("Transport")) {
                     sdpTransportLine = line;
                     RTP_dest_port = Integer.parseInt(line.split("=")[1].split("-")[0]);
-                    FEC_dest_port = RTP_dest_port + 2;
+                    FEC_dest_port = RTP_dest_port;
                     logger.log(Level.FINE, "Client-Port: " + RTP_dest_port);
                 }
                 // else is any other field, not checking for now
@@ -554,7 +554,7 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
         rtspBody.write("a=rtpmap:26 JPEG/90000" + CRLF);
         rtspBody.write("a=framerate:" + meta.getFramerate() + CRLF);
 
-        rtspHeader.write("Content-Base: " + "rtsp://localhost/htw.mjpeg/" + CRLF);
+        rtspHeader.write("Content-Base: " + "rtsp://localhost:8554/htw.mjpeg" + CRLF);
         rtspHeader.write("Content-Type: " + "application/sdp" + CRLF);
         rtspHeader.write("Content-Length: " + rtspBody.toString().getBytes().length + CRLF);
         rtspHeader.write(CRLF);

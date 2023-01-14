@@ -49,7 +49,7 @@ public class Client {
     // RTP variables:
     // ----------------
     DatagramSocket RTPsocket; // socket to be used to send and receive UDP packets
-    //DatagramSocket FECsocket; // socket to be used to send and receive UDP packets for FEC
+    //    DatagramSocket FECsocket; // socket to be used to send and receive UDP packets for FEC
     private RtpHandler rtpHandler = null;
     static int RTP_RCV_PORT = 25000; // port where the client will receive the RTP packets
     // static int FEC_RCV_PORT = 25002; // port where the client will receive the RTP packets
@@ -234,7 +234,7 @@ public class Client {
                     RTPsocket = new DatagramSocket(RTP_RCV_PORT);
 
                     // for now FEC packets are received via RTP-Port, so keep comment below
-                    // FECsocket = new DatagramSocket(FEC_RCV_PORT);
+//                     FECsocket = new DatagramSocket(FEC_RCV_PORT);
 
                     // DoneTASK set Timeout value of the socket to 1 ms
                     RTPsocket.setSoTimeout(1);
@@ -361,7 +361,7 @@ public class Client {
             } else {
                 // DoneTASK change RTSP state and print out new state to console and statusLabel
                 state = INIT;
-                statsLabel.setText("Status: INIT");
+                statusLabel.setText("Status: INIT");
                 logger.log(Level.INFO, "New RTSP state: INIT\n");
 
                 // stop the timer
@@ -481,29 +481,30 @@ public class Client {
             }
         }
 
-        //TASK complete the statistics
+        //DoneTASK complete the statistics
         private void setStatistics(ReceptionStatistic rs) {
             DecimalFormat df = new DecimalFormat("###.###");
+
             pufferLabel.setText(
                     "Puffer: "
-                            + ""  //
-                            + " aktuelle Nr. / Summe empf.: "
-                            + " / "
+                            + (rs.latestSequenceNumber - rs.playbackIndex)
+                            + " // aktuelle Nr. / Summe empf.: "
+                            + rs.latestSequenceNumber + " / " + rs.receivedPackets
                             + "");
             statsLabel.setText(
-                    "<html>Abspielzähler / verlorene Medienpakete // Bilder / verloren: "
-                            + ""
+                    "Abspielzähler / verlorene Medienpakete: "
+                            + rs.playbackIndex
                             + " / "
-                            + ""
-                            + "<p/>"
-                            + "</html>");
+                            + rs.packetsLost
+                            + " // Bilder / verloren: " + rs.requestedFrames + " / " + rs.framesLost
+                            + " verl. MP: " + df.format(rs.packetsLost / (double) rs.latestSequenceNumber * 100) + "%");
             fecLabel.setText(
                     "FEC: korrigiert / nicht korrigiert: "
-                            + ""
+                            + rs.correctedPackets
                             + " / "
-                            + ""
-                            + "  Ratio: "
-                            + "");
+                            + rs.notCorrectedPackets
+                            + "  nicht korrigierbar: "
+                            + df.format(rs.notCorrectedPackets / (double) rs.latestSequenceNumber * 100) + "%");
         }
     }
 

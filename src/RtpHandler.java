@@ -180,7 +180,12 @@ public class RtpHandler {
             return null;
         }
 
-        byte[] image = JpegFrame.combineToOneImage(packetList);
+        byte[] image;
+        try {
+            image = JpegFrame.combineToOneImage(packetList);
+        } catch (Exception ignored) {
+            return null;
+        }
         logger.log(Level.FINE, "Display TS: "
                 + (packetList.get(0).gettimestamp() & 0xFFFFFFFFL)
                 + " size: " + image.length);
@@ -412,4 +417,3 @@ public class RtpHandler {
         JPEG_ATTACK
     }
 }
-

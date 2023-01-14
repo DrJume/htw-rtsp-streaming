@@ -5,6 +5,7 @@
     <option name="PROGRAM_PARAMETERS" value="localhost 8554 htw.mjpeg" />
     <method v="2">
       <option name="Make" enabled="true" />
+      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_Sleep" />
     </method>
   </configuration>
 </component>

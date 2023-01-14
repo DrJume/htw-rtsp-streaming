@@ -160,10 +160,16 @@ public class FecHandler {
     public boolean checkCorrection(int nr, HashMap<Integer, RTPpacket> mediaPackets) {
         FECpacket fecPacketForSn = fecStack.get(fecNr.get(nr));
         if (fecPacketForSn == null) return false;
+        System.out.println("checkCorrection: FEC packet found for seqNr: " + nr);
 
-        if (fecList.get(nr) == null) return false;
         List<Integer> rtpSeqNrGroup = fecList.get(nr);
-        rtpSeqNrGroup.remove(nr);
+        if (rtpSeqNrGroup == null) return false;
+        System.out.println("checkCorrection: rtpSeqNrGroup: " + rtpSeqNrGroup.toString());
+        rtpSeqNrGroup.removeIf(seqNr -> seqNr == nr);
+        if (rtpSeqNrGroup.isEmpty()) return false;
+        System.out.println("checkCorrection: rtpSeqNrGroupRest: " + rtpSeqNrGroup.toString());
+
+        System.out.println("checkCorrection: mediaPackets.keySet(): " + mediaPackets.keySet().toString());
 
         return mediaPackets.keySet().containsAll(rtpSeqNrGroup);
     }
@@ -183,10 +189,11 @@ public class FecHandler {
         rtpSeqNrGroup.removeIf((seqNr) -> seqNr == nr);
 
         for (int rtpSeqNr : rtpSeqNrGroup) {
-            fec.addRtp(mediaPackets.get(rtpSeqNr));
+//            System.out.println("correctRtp: mediaPacket: " + mediaPackets.get(rtpSeqNr));
+            fecPacket.addRtp(mediaPackets.get(rtpSeqNr));
         }
 
-        return fec.getLostRtp(nr);
+        return fecPacket.getLostRtp(nr);
     }
 
     /**
