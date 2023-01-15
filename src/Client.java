@@ -492,19 +492,20 @@ public class Client {
                             + rs.latestSequenceNumber + " / " + rs.receivedPackets
                             + "");
             statsLabel.setText(
-                    "Abspielzähler / verlorene Medienpakete: "
+                    "Abspielzähler / verl. MP: "
                             + rs.playbackIndex
                             + " / "
                             + rs.packetsLost
                             + " // Bilder / verloren: " + rs.requestedFrames + " / " + rs.framesLost
-                            + " verl. MP: " + df.format(rs.packetsLost / (double) rs.latestSequenceNumber * 100) + "%");
+                            + " // verl. MP: " + df.format(rs.packetsLost / (double) rs.latestSequenceNumber * 100) + "%");
             fecLabel.setText(
-                    "FEC: korrigiert / nicht korrigiert: "
+                    "FEC: korrigiert / nicht korr.: "
                             + rs.correctedPackets
                             + " / "
                             + rs.notCorrectedPackets
-                            + "  nicht korrigierbar: "
-                            + df.format(rs.notCorrectedPackets / (double) rs.latestSequenceNumber * 100) + "%");
+                            + "  nicht korr.: "
+                            + df.format(rs.notCorrectedPackets / (double) rs.latestSequenceNumber * 100) + "%"
+                            + " Pr= " + df.format(rs.notCorrectedPackets / (double) rs.packetsLost * 100) + "%");
         }
     }
 
